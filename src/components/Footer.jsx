@@ -7,7 +7,7 @@ function Footer() {
         {/* About Company */}
         <div>
           <h2 className="text-2xl font-bold text-amber-500 mb-4">
-            digrambar Interior........
+            Mauli Interior
           </h2>
           <p className="text-sm leading-6">
             We specialize in modern and luxury interior design solutions
