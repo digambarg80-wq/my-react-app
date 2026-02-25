@@ -9,4 +9,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  //for docker only
+  server:{
+    host:true, //allows external /docker accesss
+    port : 5173 ,//matches EXPOSE 5173
+     watch:{
+      usePolling:true,
+      interval:100,
+     }
+  }
 });

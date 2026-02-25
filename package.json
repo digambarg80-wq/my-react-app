@@ -5,7 +5,7 @@
   "type": "module",
   "homepage": "https://digambarg80-wq.github.io/my-react-app",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
