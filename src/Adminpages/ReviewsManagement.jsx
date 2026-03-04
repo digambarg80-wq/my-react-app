@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 export default function ReviewsManagement() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, active, hidden
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchReviews();
@@ -74,10 +74,8 @@ export default function ReviewsManagement() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Reviews Management</h1>
-        
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -93,7 +91,8 @@ export default function ReviewsManagement() {
         <table className="w-full">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-6 py-3 text-left">Product</th>
+              <th className="px-6 py-3 text-left">S.No</th>
+              <th className="px-6 py-3 text-left">Product ID</th>
               <th className="px-6 py-3 text-left">Customer</th>
               <th className="px-6 py-3 text-left">Rating</th>
               <th className="px-6 py-3 text-left">Review</th>
@@ -103,9 +102,10 @@ export default function ReviewsManagement() {
             </tr>
           </thead>
           <tbody>
-            {filteredReviews.map(review => (
+            {filteredReviews.map((review, index) => (
               <tr key={review.id} className="border-t hover:bg-gray-50">
-                <td className="px-6 py-4">
+                <td className="px-6 py-4">{index + 1}</td>
+                <td className="px-6 py-4 font-mono text-sm">
                   {review.productId?.slice(0, 8)}...
                 </td>
                 <td className="px-6 py-4">

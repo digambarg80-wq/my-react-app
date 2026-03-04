@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import BackButton from '../components/BackButton';
 
 export default function AdminLayout() {
   const [isOpen, setIsOpen] = useState(true);
@@ -18,12 +19,15 @@ export default function AdminLayout() {
   const menuItems = [
     { path: '/admin', icon: '📊', label: 'Dashboard' },
     { path: '/admin/users', icon: '👥', label: 'Users' },
+    { path: '/admin/customers', icon: '👤', label: 'Customers' },
     { path: '/admin/products', icon: '📦', label: 'Products' },
-      { path: '/admin/orders', icon: '🛒', label: 'Orders' },
-        { path: '/admin/reviews', icon: '⭐', label: 'Reviews' },
-    { path: '/admin/contacts', icon: '📧', label: 'Contact Messages' }, 
-    // Changed from Projects
+    { path: '/admin/orders', icon: '🛒', label: 'Orders' },
+    { path: '/admin/reviews', icon: '⭐', label: 'Reviews' },
+    { path: '/admin/contacts', icon: '📧', label: 'Messages' },
   ];
+
+  // Don't show back button on main admin dashboard
+  const showBackButton = location.pathname !== '/admin';
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -65,7 +69,20 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <Outlet />
+        {/* Header with Back Button */}
+        <div className="bg-white border-b px-6 py-4">
+          <div className="flex items-center gap-4">
+            {showBackButton && <BackButton />}
+            <h1 className="text-2xl font-bold text-gray-800">
+              {menuItems.find(item => item.path === location.pathname)?.label || 'Admin Panel'}
+            </h1>
+          </div>
+        </div>
+        
+        {/* Page Content */}
+        <div className="p-6">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

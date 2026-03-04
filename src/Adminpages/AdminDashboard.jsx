@@ -12,8 +12,8 @@ import {
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import { Link } from 'react-router-dom';
+import BackButton from '../components/BackButton';
 
-// Register ChartJS components
 ChartJS.register(
   ArcElement, 
   Tooltip, 
@@ -43,20 +43,16 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     try {
-      // Fetch users
       const usersSnap = await getDocs(collection(db, 'users'));
       const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Fetch products
       const productsSnap = await getDocs(collection(db, 'products'));
       const products = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Calculate stats
       const admins = users.filter(u => u.role === 'admin').length;
       const staff = users.filter(u => u.role === 'staff').length;
       const customers = users.filter(u => u.role === 'customer' || !u.role).length;
 
-      // Category distribution
       const categories = {};
       products.forEach(p => {
         categories[p.category] = (categories[p.category] || 0) + 1;
@@ -80,7 +76,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Chart Data
   const roleChartData = {
     labels: ['Admins', 'Staff', 'Customers'],
     datasets: [{
@@ -102,48 +97,26 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Dashboard Overview</h1>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers}
-          icon="👥"
-          color="bg-blue-500"
-          link="/admin/users"
-        />
-        <StatCard 
-          title="Total Products" 
-          value={stats.totalProducts}
-          icon="📦"
-          color="bg-green-500"
-          link="/admin/products"
-        />
-        <StatCard 
-          title="Staff Members" 
-          value={stats.staff}
-          icon="👔"
-          color="bg-purple-500"
-        />
-        <StatCard 
-          title="Customers" 
-          value={stats.customers}
-          icon="👤"
-          color="bg-yellow-500"
-        />
+      <div className="flex items-center gap-4 mb-6">
+        <BackButton />
+        <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
       </div>
 
-      {/* Charts Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard title="Total Users" value={stats.totalUsers} icon="👥" color="bg-blue-500" link="/admin/users" />
+        <StatCard title="Total Products" value={stats.totalProducts} icon="📦" color="bg-green-500" link="/admin/products" />
+        <StatCard title="Staff Members" value={stats.staff} icon="👔" color="bg-purple-500" />
+        <StatCard title="Customers" value={stats.customers} icon="👤" color="bg-yellow-500" />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Pie Chart */}
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <h2 className="text-xl font-bold mb-4">User Roles Distribution</h2>
           <div className="h-80 flex items-center justify-center">
@@ -155,18 +128,11 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Bar Chart */}
         <div className="bg-white p-6 rounded-xl shadow-lg">
           <h2 className="text-xl font-bold mb-4">Products by Category</h2>
           <div className="h-80">
             {stats.totalProducts > 0 ? (
-              <Bar 
-                data={categoryChartData} 
-                options={{ 
-                  maintainAspectRatio: false,
-                  scales: { y: { beginAtZero: true } }
-                }} 
-              />
+              <Bar data={categoryChartData} options={{ maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }} />
             ) : (
               <p className="text-gray-500">No products found</p>
             )}
@@ -174,7 +140,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Recent Users Table */}
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Recent Users</h2>
@@ -216,9 +181,11 @@ export default function AdminDashboard() {
   );
 }
 
-// Stat Card Component
+// StatCard component defined in the same file (NOT a separate file)
+// StatCard component
 function StatCard({ title, value, icon, color, link }) {
-  const CardContent = () => (
+
+  const CardContent = (
     <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition">
       <div className="flex items-center justify-between">
         <div>
@@ -232,11 +199,9 @@ function StatCard({ title, value, icon, color, link }) {
     </div>
   );
 
-  return link ? (
-    <Link to={link}>
-      <CardContent />
-    </Link>
-  ) : (
-    <CardContent />
-  );
+  if (link) {
+    return <Link to={link}>{CardContent}</Link>;
+  }
+
+  return CardContent;
 }

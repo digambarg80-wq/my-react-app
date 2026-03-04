@@ -1,14 +1,14 @@
 import WhatsAppButton from '../components/WhatsAppButton';
+import QuickViewModal from '../components/QuickViewModal';
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { useWishlist } from "../context/WishlistContext"; // ADDED
+import { useWishlist } from "../context/WishlistContext";
 import { useNavigate } from "react-router-dom";
 import { ProductSkeleton } from '../components/LoadingSkeleton';
 import ProductReviews from '../components/ProductReviews';
-
 
 function Products() {
   const [products, setProducts] = useState([]);
@@ -17,6 +17,7 @@ function Products() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
   
   // Search, Filter, Sort states
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,44 +27,48 @@ function Products() {
   
   const { currentUser } = useAuth();
   const { addToCart } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist(); // ADDED
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
 
   const handleImageError = (e) => {
     e.target.src = 'https://picsum.photos/400/300?random=1';
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+useEffect(() => {
+  fetchProducts();
+}, []);
 
-  // Apply filters whenever products, search, category, priceRange, or sortBy changes
-  useEffect(() => {
-    applyFilters();
-  }, [products, searchTerm, selectedCategory, priceRange, sortBy]);
+useEffect(() => {
+  fetchProducts();
+}, []);
 
-  const fetchProducts = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const productList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productList);
-      
-      const uniqueCategories = [...new Set(productList.map(p => p.category).filter(Boolean))];
-      setCategories(uniqueCategories);
-      
-      // Set max price for filter
-      const maxPrice = Math.max(...productList.map(p => p.price || 0));
-      setPriceRange({ min: 0, max: maxPrice || 100000 });
-      
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+// Apply filters whenever products, search, category, priceRange, or sortBy changes
+useEffect(() => {
+  applyFilters();
+}, [products, searchTerm, selectedCategory, priceRange, sortBy]);
+
+const fetchProducts = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "products"));
+    const productList = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setProducts(productList);
+    
+    const uniqueCategories = [...new Set(productList.map(p => p.category).filter(Boolean))];
+    setCategories(uniqueCategories);
+    
+    // Set max price for filter
+    const maxPrice = Math.max(...productList.map(p => p.price || 0));
+    setPriceRange({ min: 0, max: maxPrice || 100000 });
+    
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const applyFilters = () => {
     let filtered = [...products];
@@ -145,8 +150,8 @@ function Products() {
   if (loading) {
     return (
       <div className="py-16 px-6 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1,2,3,4,5,6].map(n => <ProductSkeleton key={n} />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1,2,3,4,5,6,7,8].map(n => <ProductSkeleton key={n} />)}
         </div>
       </div>
     );
@@ -183,7 +188,6 @@ function Products() {
             <p className="text-gray-600 mb-6">{selectedProduct.description}</p>
             
             <div className="space-y-3">
-              {/* ADDED: Wishlist Button in Product Detail */}
               <button
                 onClick={() => {
                   if (isInWishlist(selectedProduct.id)) {
@@ -271,7 +275,7 @@ function Products() {
               </select>
             </div>
 
-            {/* Price Range Filter - Only Number Inputs */}
+            {/* Price Range Filter */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Price Range: ₹{priceRange.min} - ₹{priceRange.max}
@@ -355,10 +359,10 @@ function Products() {
         </p>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Products Grid - 4 products per row on large screens */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.length === 0 ? (
-          <div className="text-center col-span-3 py-12">
+          <div className="text-center col-span-full py-12">
             <p className="text-gray-500 text-lg mb-4">No products found matching your criteria.</p>
             <button
               onClick={clearFilters}
@@ -371,10 +375,20 @@ function Products() {
           filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition cursor-pointer relative"
-              onClick={() => setSelectedProduct(product)}
+              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition cursor-pointer relative group"
             >
-              {/* ADDED: Wishlist Button */}
+              {/* Quick View Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuickViewProduct(product);
+                }}
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-amber-500 text-white px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition z-20 whitespace-nowrap font-medium shadow-lg"
+              >
+                Quick View
+              </button>
+
+              {/* Wishlist Button */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -394,32 +408,32 @@ function Products() {
               <img
                 src={product.image || `https://picsum.photos/400/300?random=${product.id}`}
                 alt={product.name}
-                className="w-full h-64 object-cover"
+                className="w-full h-48 object-cover group-hover:scale-105 transition duration-300"
                 onError={handleImageError}
               />
-              <div className="p-6">
+              <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-xl font-semibold">{product.name}</h2>
+                  <h2 className="text-lg font-semibold line-clamp-1">{product.name}</h2>
                   {product.category && (
-                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs capitalize">
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs capitalize whitespace-nowrap">
                       {product.category}
                     </span>
                   )}
                 </div>
-                <p className="text-gray-600 mt-2 line-clamp-2">{product.description}</p>
-                <div className="flex justify-between items-center mt-4">
-                  <p className="text-2xl font-bold text-amber-600">₹{product.price}</p>
-                  {!product.inStock && (
-                    <span className="text-red-500 text-sm">Out of Stock</span>
-                  )}
+                <p className="text-gray-600 text-sm line-clamp-2 mb-2">{product.description}</p>
+                
+                {/* Price */}
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="text-xl font-bold text-amber-600">₹{product.price}</p>
                 </div>
+
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     handleAddToCart(product);
                   }}
                   disabled={!product.inStock}
-                  className={`w-full mt-4 py-2 rounded-lg transition ${
+                  className={`w-full py-2 rounded-lg text-sm font-medium transition ${
                     product.inStock 
                       ? "bg-amber-500 hover:bg-amber-600 text-white" 
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -432,6 +446,13 @@ function Products() {
           ))
         )}
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal 
+        product={quickViewProduct}
+        isOpen={quickViewProduct !== null}
+        onClose={() => setQuickViewProduct(null)}
+      />
 
       {/* Floating WhatsApp Button */}
       <WhatsAppButton />

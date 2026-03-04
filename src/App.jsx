@@ -2,9 +2,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
-import { WishlistProvider } from "./context/WishlistContext"; // ADDED: Wishlist Provider
+import { WishlistProvider } from "./context/WishlistContext";
 import { Toaster } from 'react-hot-toast';
-import Navbar from "./components/Navbar";
+import Navbar from "./components/NavbarTemp";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -17,7 +17,7 @@ import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
-import Wishlist from "./pages/Wishlist"; // ADDED: Wishlist Page
+import Wishlist from "./pages/Wishlist";
 import Services from "./routes/Services";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -26,17 +26,18 @@ import AdminLayout from './Adminpages/AdminLayout';
 import AdminDashboard from './Adminpages/AdminDashboard';
 import UserManagement from './Adminpages/UserManagement';
 import ProductsManagement from './Adminpages/ProductsManagement';
+import CustomerManagement from "./Adminpages/CustomerManagement";
 import ContactMessages from './Adminpages/ContactMessages';
 import OrdersManagement from './Adminpages/OrdersManagement';
 import ReviewsManagement from './Adminpages/ReviewsManagement';
+
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <WishlistProvider> {/* ADDED: Wrap with WishlistProvider */}
-            {/* Toast Notifications */}
+          <WishlistProvider>
             <Toaster 
               position="top-right"
               toastOptions={{
@@ -78,7 +79,6 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* ADDED: Wishlist Route */}
               <Route path="/wishlist" element={
                 <ProtectedRoute>
                   <><Navbar /><Wishlist /><Footer /></>
@@ -101,6 +101,7 @@ function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="products" element={<ProductsManagement />} />
+                <Route path="customers" element={<CustomerManagement/>} />
                 <Route path="orders" element={<OrdersManagement />} />
                 <Route path="reviews" element={<ReviewsManagement />} />
                 <Route path="contacts" element={<ContactMessages />} />
@@ -117,7 +118,7 @@ function App() {
                 </div>
               } />
             </Routes>
-          </WishlistProvider> {/* ADDED: Close WishlistProvider */}
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>
