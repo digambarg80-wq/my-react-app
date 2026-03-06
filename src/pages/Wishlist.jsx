@@ -1,13 +1,13 @@
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Wishlist() {
   const { wishlistItems, removeFromWishlist, clearWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
+
 
   if (!currentUser) {
     return (
