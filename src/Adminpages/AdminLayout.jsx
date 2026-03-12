@@ -19,14 +19,15 @@ export default function AdminLayout() {
   const menuItems = [
     { path: '/admin', icon: '📊', label: 'Dashboard' },
     { path: '/admin/users', icon: '👥', label: 'Users' },
+    { path: '/admin/staff', icon: '👔', label: 'Staff' },
     { path: '/admin/customers', icon: '👤', label: 'Customers' },
     { path: '/admin/products', icon: '📦', label: 'Products' },
     { path: '/admin/orders', icon: '🛒', label: 'Orders' },
     { path: '/admin/reviews', icon: '⭐', label: 'Reviews' },
     { path: '/admin/contacts', icon: '📧', label: 'Messages' },
+    { path: '/admin/roles', icon: '🔑', label: 'Roles' },
   ];
 
-  // Don't show back button on main admin dashboard
   const showBackButton = location.pathname !== '/admin';
 
   return (

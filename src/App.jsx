@@ -30,7 +30,8 @@ import CustomerManagement from "./Adminpages/CustomerManagement";
 import ContactMessages from './Adminpages/ContactMessages';
 import OrdersManagement from './Adminpages/OrdersManagement';
 import ReviewsManagement from './Adminpages/ReviewsManagement';
-
+import StaffManagement from './Adminpages/StaffManagement';
+import RoleManagement from './Adminpages/RoleManagement';
 
 function App() {
   return (
@@ -105,6 +106,8 @@ function App() {
                 <Route path="orders" element={<OrdersManagement />} />
                 <Route path="reviews" element={<ReviewsManagement />} />
                 <Route path="contacts" element={<ContactMessages />} />
+                <Route path="staff" element={<StaffManagement />} />
+                <Route path="roles" element={<RoleManagement />} />
               </Route>
 
               {/* 404 Page */}
