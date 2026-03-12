@@ -1,4 +1,4 @@
-// src/Adminpages/ProductManagement.jsx
+// src/Adminpages/ProductsManagement.jsx
 import { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -15,7 +15,7 @@ export default function ProductManagement() {
     description: '',
     price: '',
     category: 'furniture',
-    image: '',
+    images: [''], // Changed from single image to array of images
     inStock: true,
     featured: false
   });
@@ -63,6 +63,28 @@ export default function ProductManagement() {
     }
   };
 
+  // Handle image URL changes
+  const handleImageChange = (index, value) => {
+    const newImages = [...formData.images];
+    newImages[index] = value;
+    setFormData({ ...formData, images: newImages });
+  };
+
+  // Add new image field
+  const addImageField = () => {
+    setFormData({ ...formData, images: [...formData.images, ''] });
+  };
+
+  // Remove image field
+  const removeImageField = (index) => {
+    if (formData.images.length <= 1) {
+      toast.error('At least one image is required');
+      return;
+    }
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData({ ...formData, images: newImages });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -74,13 +96,22 @@ export default function ProductManagement() {
       return;
     }
 
+    // Validate at least one image
+    const validImages = formData.images.filter(url => url.trim() !== '');
+    if (validImages.length === 0) {
+      toast.error('Please add at least one image');
+      setLoading(false);
+      return;
+    }
+
     try {
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: Number(formData.price),
         category: formData.category,
-        image: formData.image || '',
+        images: validImages, // Store all valid images
+        mainImage: validImages[0], // First image as main image
         inStock: formData.inStock,
         featured: formData.featured,
         updatedAt: new Date().toISOString()
@@ -159,7 +190,7 @@ export default function ProductManagement() {
                 description: '',
                 price: '',
                 category: 'furniture',
-                image: '',
+                images: [''],
                 inStock: true,
                 featured: false
               });
@@ -203,7 +234,7 @@ export default function ProductManagement() {
                     description: '',
                     price: '',
                     category: 'furniture',
-                    image: '',
+                    images: [''],
                     inStock: true,
                     featured: false
                   });
@@ -219,13 +250,18 @@ export default function ProductManagement() {
               <div key={product.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
                 <div className="relative">
                   <img 
-                    src={product.image || 'https://via.placeholder.com/400x300?text=No+Image'} 
+                    src={product.images?.[0] || product.image || 'https://via.placeholder.com/400x300?text=No+Image'} 
                     alt={product.name}
                     className="w-full h-48 object-cover"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
                     }}
                   />
+                  {product.images?.length > 1 && (
+                    <span className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                      +{product.images.length - 1} more
+                    </span>
+                  )}
                   {product.featured && (
                     <span className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-medium">
                       ⭐ Featured
@@ -254,7 +290,15 @@ export default function ProductManagement() {
                       <button
                         onClick={() => {
                           setEditingProduct(product);
-                          setFormData(product);
+                          setFormData({
+                            name: product.name,
+                            description: product.description || '',
+                            price: product.price,
+                            category: product.category,
+                            images: product.images || [product.image || ''],
+                            inStock: product.inStock,
+                            featured: product.featured || false
+                          });
                           setShowModal(true);
                         }}
                         className="text-blue-600 hover:text-blue-800 font-medium"
@@ -348,28 +392,52 @@ export default function ProductManagement() {
                 </div>
               </div>
 
-              {/* Image URL */}
+              {/* Multiple Images Section */}
               <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({...formData, image: e.target.value})}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                  placeholder="https://example.com/image.jpg"
-                />
-                {formData.image && (
-                  <div className="mt-2">
-                    <img 
-                      src={formData.image} 
-                      alt="Preview" 
-                      className="w-20 h-20 object-cover rounded border"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/80?text=Invalid+URL';
-                      }}
-                    />
+                <label className="block text-sm font-medium mb-2">Product Images *</label>
+                {formData.images.map((imageUrl, index) => (
+                  <div key={index} className="mb-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => handleImageChange(index, e.target.value)}
+                        className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        placeholder={`Image URL ${index + 1}`}
+                        required={index === 0} // First image is required
+                      />
+                      {formData.images.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeImageField(index)}
+                          className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                    {imageUrl && (
+                      <div className="mt-2">
+                        <img 
+                          src={imageUrl} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-20 h-20 object-cover rounded border"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/80?text=Invalid+URL';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={addImageField}
+                  className="mt-2 text-sm text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                >
+                  <span>+</span> Add Another Image
+                </button>
               </div>
 
               {/* Checkboxes */}

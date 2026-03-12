@@ -7,12 +7,25 @@ import WhatsAppButton from './WhatsAppButton';
 
 export default function QuickViewModal({ product, isOpen, onClose }) {
   const [quantity, setQuantity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   if (!isOpen || !product) return null;
+
+  // Get all images (support both old and new format)
+  const images = product.images || (product.image ? [product.image] : ['https://via.placeholder.com/500x400?text=No+Image']);
+  const currentImage = images[currentImageIndex] || images[0];
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   const handleAddToCart = () => {
     if (!currentUser) {
@@ -47,13 +60,67 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Product Image */}
+            {/* Product Image Gallery */}
             <div>
-              <img
-                src={product.image || 'https://via.placeholder.com/500x400?text=Product'}
-                alt={product.name}
-                className="w-full rounded-lg"
-              />
+              <div className="relative">
+                <img
+                  src={currentImage}
+                  alt={product.name}
+                  className="w-full rounded-lg"
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/500x400?text=Image+Not+Found';
+                  }}
+                />
+                
+                {/* Navigation Arrows - Only show if more than 1 image */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition"
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition"
+                    >
+                      →
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnail Strip */}
+              {images.length > 1 && (
+                <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                  {images.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition ${
+                        currentImageIndex === index ? 'border-amber-500' : 'border-transparent'
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/64?text=No+Image';
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Image Counter */}
+              {images.length > 1 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Image {currentImageIndex + 1} of {images.length}
+                </p>
+              )}
             </div>
 
             {/* Product Details */}

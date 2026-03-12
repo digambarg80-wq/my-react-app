@@ -11,6 +11,8 @@ export default function ProductReviews({ productId }) {
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [canReview, setCanReview] = useState(false);
+  const [userOrders, setUserOrders] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editComment, setEditComment] = useState('');
   const [editRating, setEditRating] = useState(5);
@@ -24,20 +26,60 @@ export default function ProductReviews({ productId }) {
     }
   }, [productId]);
 
+  useEffect(() => {
+    if (currentUser && productId) {
+      checkIfUserCanReview();
+    }
+  }, [currentUser, productId, userReview]);
+
+  // Check if user has purchased this product and order is completed
+  const checkIfUserCanReview = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const ordersQuery = query(
+        collection(db, 'orders'),
+        where('userId', '==', currentUser.uid),
+        where('orderStatus', '==', 'completed')
+      );
+      
+      const ordersSnapshot = await getDocs(ordersQuery);
+      const purchasedProducts = [];
+      
+      ordersSnapshot.docs.forEach(doc => {
+        const order = doc.data();
+        order.items?.forEach(item => {
+          if (item.id === productId) {
+            purchasedProducts.push({
+              orderId: doc.id,
+              orderDate: order.orderDate
+            });
+          }
+        });
+      });
+      
+      setUserOrders(purchasedProducts);
+      
+      // User can review if they have purchased this product and haven't already reviewed
+      const hasPurchased = purchasedProducts.length > 0;
+      const alreadyReviewed = userReview !== null;
+      
+      setCanReview(hasPurchased && !alreadyReviewed);
+      
+    } catch (error) {
+      console.error('Error checking purchase:', error);
+    }
+  };
+
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      console.log("Fetching reviews for product:", productId);
-      
-      // Simplified query - removed orderBy to avoid index requirement
       const q = query(
         collection(db, 'reviews'), 
         where('productId', '==', productId)
       );
       
       const snapshot = await getDocs(q);
-      console.log("Reviews fetched:", snapshot.docs.length);
-      
       const reviewsList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -86,6 +128,11 @@ export default function ProductReviews({ productId }) {
       return;
     }
 
+    if (!canReview) {
+      toast.error('You can only review products you have purchased');
+      return;
+    }
+
     if (!comment.trim()) {
       toast.error('Please write a comment');
       return;
@@ -102,18 +149,18 @@ export default function ProductReviews({ productId }) {
         comment: comment.trim(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        status: 'active'
+        status: 'active',
+        orderId: userOrders[0]?.orderId || null,
+        verified: true
       };
 
-      console.log("Submitting review:", reviewData);
-      
-      const docRef = await addDoc(collection(db, 'reviews'), reviewData);
-      console.log("Review saved with ID:", docRef.id);
+      await addDoc(collection(db, 'reviews'), reviewData);
       
       toast.success('Review submitted successfully!');
       setComment('');
       setRating(5);
-      fetchReviews(); // Refresh reviews
+      fetchReviews();
+      setCanReview(false);
       
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -159,7 +206,6 @@ export default function ProductReviews({ productId }) {
       await deleteDoc(doc(db, 'reviews', reviewId));
       toast.success('Review deleted successfully');
       
-      // Clear userReview if it was their review
       if (userReview?.id === reviewId) {
         setUserReview(null);
       }
@@ -168,25 +214,6 @@ export default function ProductReviews({ productId }) {
     } catch (error) {
       console.error('Error deleting review:', error);
       toast.error('Failed to delete review: ' + error.message);
-    }
-  };
-
-  const handleModerateReview = async (reviewId, newStatus) => {
-    if (!window.confirm(`Are you sure you want to ${newStatus === 'active' ? 'show' : 'hide'} this review?`)) {
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, 'reviews', reviewId), {
-        status: newStatus,
-        moderatedAt: new Date().toISOString(),
-        moderatedBy: currentUser?.uid
-      });
-      toast.success(`Review ${newStatus === 'active' ? 'shown' : 'hidden'} successfully`);
-      fetchReviews();
-    } catch (error) {
-      console.error('Error moderating review:', error);
-      toast.error('Failed to moderate review: ' + error.message);
     }
   };
 
@@ -211,11 +238,6 @@ export default function ProductReviews({ productId }) {
 
   // Filter only active reviews for public display
   const visibleReviews = reviews.filter(r => r.status === 'active');
-  const isAdmin = userData?.role === 'admin';
-
-  // Log for debugging
-  console.log("Current reviews:", reviews);
-  console.log("Visible reviews:", visibleReviews);
 
   return (
     <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
@@ -235,38 +257,45 @@ export default function ProductReviews({ productId }) {
         </div>
       </div>
 
-      {/* Write Review Form - Only for logged in users who haven't reviewed */}
+      {/* Write Review Form - Only for users who purchased and haven't reviewed */}
       {currentUser && !userReview && (
-        <form onSubmit={handleSubmitReview} className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h4 className="font-semibold mb-3">Write a Review</h4>
-          
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Rating</label>
-            <div className="flex gap-1">
-              {renderStars(rating, true, setRating)}
+        canReview ? (
+          <form onSubmit={handleSubmitReview} className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h4 className="font-semibold mb-3">Write a Review</h4>
+            <p className="text-xs text-green-600 mb-2">✓ You can review this product (you've purchased it)</p>
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Rating</label>
+              <div className="flex gap-1">
+                {renderStars(rating, true, setRating)}
+              </div>
             </div>
-          </div>
 
-          <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Your Review</label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience with this product..."
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500"
-              rows="3"
-              required
-            />
-          </div>
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Your Review</label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Share your experience with this product..."
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-amber-500"
+                rows="3"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
-          >
-            {submitting ? 'Submitting...' : 'Submit Review'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition disabled:opacity-50"
+            >
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </form>
+        ) : (
+          <div className="bg-yellow-50 p-4 rounded-lg mb-6 text-center">
+            <p className="text-gray-600">You can review this product after purchasing and receiving it.</p>
+          </div>
+        )
       )}
 
       {/* User's existing review - show edit option */}
@@ -313,6 +342,7 @@ export default function ProductReviews({ productId }) {
               <p className="text-gray-700 mb-2">{userReview.comment}</p>
               <p className="text-xs text-gray-500">
                 {userReview.createdAt ? new Date(userReview.createdAt).toLocaleDateString() : 'Recently'}
+                {userReview.verified && <span className="ml-2 text-green-600">✓ Verified Purchase</span>}
               </p>
               <div className="flex gap-2 mt-2">
                 <button
@@ -343,7 +373,7 @@ export default function ProductReviews({ productId }) {
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent mx-auto"></div>
         </div>
       ) : visibleReviews.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No reviews yet. Be the first to review!</p>
+        <p className="text-gray-500 text-center py-8">No reviews yet.</p>
       ) : (
         <div className="space-y-4">
           {visibleReviews.map(review => (
@@ -352,6 +382,11 @@ export default function ProductReviews({ productId }) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold">{review.userName}</span>
+                    {review.verified && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        Verified Purchase
+                      </span>
+                    )}
                     <span className="text-sm text-gray-500">
                       {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'Recently'}
                     </span>
@@ -364,43 +399,6 @@ export default function ProductReviews({ productId }) {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Admin Panel for Moderation */}
-      {isAdmin && reviews.filter(r => r.status !== 'active').length > 0 && (
-        <div className="mt-8 border-t pt-6">
-          <h4 className="font-bold text-lg mb-4">Moderation Queue ({reviews.filter(r => r.status !== 'active').length})</h4>
-          <div className="space-y-4">
-            {reviews.filter(r => r.status !== 'active').map(review => (
-              <div key={review.id} className="bg-gray-100 p-4 rounded-lg">
-                <div className="flex justify-between">
-                  <div>
-                    <p className="font-medium">{review.userName}</p>
-                    <p className="text-sm text-gray-600">{review.userEmail}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleModerateReview(review.id, 'active')}
-                      className="bg-green-500 text-white px-3 py-1 rounded text-sm"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleDeleteReview(review.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-                <div className="flex text-yellow-400 mt-2">
-                  {renderStars(review.rating)}
-                </div>
-                <p className="text-gray-700 mt-1">{review.comment}</p>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

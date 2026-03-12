@@ -1,10 +1,9 @@
-// src/pages/OrderConfirmation.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
-import WhatsAppButton from '../components/WhatsAppButton';
+import Invoice from '../components/Invoice';
 
 export default function OrderConfirmation() {
   const { orderId } = useParams();
@@ -46,8 +45,8 @@ export default function OrderConfirmation() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-16">
-      <div className="max-w-3xl mx-auto px-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 text-center mb-8">
           {/* Success Icon */}
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="text-4xl">✅</span>
@@ -60,9 +59,9 @@ export default function OrderConfirmation() {
             Thank you for your order. We'll send you a confirmation email shortly.
           </p>
 
-          {/* Order Details */}
+          {/* Order Details Summary */}
           <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-            <h2 className="font-semibold mb-4">Order Details</h2>
+            <h2 className="font-semibold mb-4">Order Summary</h2>
             <p className="text-sm text-gray-600 mb-2">
               Order ID: <span className="font-mono">{order.id}</span>
             </p>
@@ -71,7 +70,7 @@ export default function OrderConfirmation() {
             </p>
 
             <div className="border-t pt-4">
-              {order.items?.map((item, idx) => (
+              {order.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-sm mb-2">
                   <span>{item.name} x{item.quantity}</span>
                   <span>₹{item.price * item.quantity}</span>
@@ -82,20 +81,15 @@ export default function OrderConfirmation() {
                 <span className="text-amber-600">₹{order.totalAmount}</span>
               </div>
             </div>
-
-            {order.paymentId && (
-              <p className="text-xs text-gray-500 mt-4">
-                Payment ID: {order.paymentId}
-              </p>
-            )}
           </div>
 
-          {/* WhatsApp Support Button */}
-          <div className="mb-6">
-            <WhatsAppButton order={order} />
+          {/* Invoice Section */}
+          <div className="border-t pt-6">
+            <Invoice order={order} user={currentUser} />
           </div>
 
-          <div className="flex gap-4 justify-center">
+          {/* Action Buttons */}
+          <div className="flex gap-4 justify-center mt-6">
             <Link
               to="/dashboard"
               className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-medium transition"
