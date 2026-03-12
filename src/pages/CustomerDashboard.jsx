@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import Invoice from '../components/Invoice'; // ADD THIS IMPORT
 
 export default function CustomerDashboard() {
   const { currentUser, userData, logout } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null); // ADD THIS STATE
 
   useEffect(() => {
     if (currentUser) {
@@ -186,12 +188,38 @@ export default function CustomerDashboard() {
                     <p>Payment: {order.paymentMethod}</p>
                     <p>Address: {order.shippingAddress}</p>
                   </div>
+
+                  {/* ADD THIS BUTTON - Invoice Button */}
+                  <button
+                    onClick={() => setSelectedOrderForInvoice(order)}
+                    className="mt-3 text-sm text-amber-600 hover:text-amber-800 flex items-center gap-1"
+                  >
+                    <span>📄</span> Download Invoice
+                  </button>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* ADD THIS MODAL - Invoice Modal */}
+      {selectedOrderForInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Invoice</h2>
+              <button 
+                onClick={() => setSelectedOrderForInvoice(null)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <Invoice order={selectedOrderForInvoice} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
