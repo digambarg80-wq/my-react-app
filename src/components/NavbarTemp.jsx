@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
+import Chatbot from "./WhatsAppButton";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,6 +16,12 @@ function Navbar() {
   
   const cartItemCount = getItemCount ? getItemCount() : 0;
   const wishlistCount = wishlistItems?.length || 0;
+ useEffect(() => {
+  console.log("userdata:", userData);
+
+ 
+
+}, []);
 
   // Change navbar style on scroll
   useEffect(() => {
@@ -194,6 +201,7 @@ function Navbar() {
           )}
         </div>
       )}
+      <Chatbot/>
     </nav>
   );
 }

@@ -16,9 +16,9 @@ export default function AdminLayout() {
     }
   };
 
+  // REMOVED "Users" from menu - now only Staff and Customers
   const menuItems = [
     { path: '/admin', icon: '📊', label: 'Dashboard' },
-    { path: '/admin/users', icon: '👥', label: 'Users' },
     { path: '/admin/staff', icon: '👔', label: 'Staff' },
     { path: '/admin/customers', icon: '👤', label: 'Customers' },
     { path: '/admin/products', icon: '📦', label: 'Products' },

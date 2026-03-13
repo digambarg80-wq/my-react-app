@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { 
   collection, 
   getDocs, 
-  addDoc, 
   updateDoc, 
   deleteDoc, 
   doc,
   query,
-  where
-} from 'firebase/firestore';
+  where,
+  setDoc
+} from 'firebase/firestore'; // Removed addDoc since we're using setDoc
 import { 
   createUserWithEmailAndPassword,
   sendPasswordResetEmail 
@@ -41,7 +41,7 @@ export default function StaffManagement() {
   const [search, setSearch] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   
-  const { currentUser } = useAuth(); // Keep this even if not used now - might be used later for tracking who added
+  const { currentUser } = useAuth();
 
   // Departments
   const departments = [
@@ -138,25 +138,40 @@ export default function StaffManagement() {
     setLoading(true);
 
     try {
+      // Validate required fields
+      if (!formData.name || !formData.email) {
+        toast.error('Name and Email are required');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare staff data object with all fields
+      const staffData = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone?.trim() || '',
+        role: 'staff',
+        department: formData.department,
+        designation: formData.designation,
+        joinDate: formData.joinDate || '',
+        salary: formData.salary ? Number(formData.salary) : '',
+        address: formData.address?.trim() || '',
+        emergencyContact: formData.emergencyContact?.trim() || '',
+        emergencyPhone: formData.emergencyPhone?.trim() || '',
+        status: formData.status,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser?.uid || ''
+      };
+
       if (editingStaff) {
-        // Update existing staff
+        // Update existing staff - use the document ID directly
         const staffRef = doc(db, 'users', editingStaff.id);
         await updateDoc(staffRef, {
-          name: formData.name,
-          phone: formData.phone,
-          department: formData.department,
-          designation: formData.designation,
-          joinDate: formData.joinDate,
-          salary: formData.salary,
-          address: formData.address,
-          emergencyContact: formData.emergencyContact,
-          emergencyPhone: formData.emergencyPhone,
-          status: formData.status,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentUser?.uid // Using currentUser here
+          ...staffData,
+          updatedAt: new Date().toISOString()
         });
         
-        if (formData.password) {
+        if (formData.password && formData.password.trim() !== '') {
           await sendPasswordResetEmail(auth, formData.email);
           toast.success('Password reset email sent to staff');
         }
@@ -164,30 +179,25 @@ export default function StaffManagement() {
         toast.success('Staff updated successfully!');
       } else {
         // Create new staff
+        if (!formData.password) {
+          toast.error('Password is required for new staff');
+          setLoading(false);
+          return;
+        }
+
+        // Create user in Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(
           auth, 
-          formData.email, 
+          formData.email.trim().toLowerCase(), 
           formData.password
         );
         
-        // Store additional staff data in Firestore
-        await addDoc(collection(db, 'users'), {
+        // Store staff data in Firestore using the user's UID as document ID
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          ...staffData,
           uid: userCredential.user.uid,
-          email: formData.email,
-          name: formData.name,
-          phone: formData.phone,
-          role: 'staff',
-          department: formData.department,
-          designation: formData.designation,
-          joinDate: formData.joinDate,
-          salary: formData.salary,
-          address: formData.address,
-          emergencyContact: formData.emergencyContact,
-          emergencyPhone: formData.emergencyPhone,
-          status: formData.status,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdBy: currentUser?.uid // Using currentUser here
+          createdBy: currentUser?.uid || ''
         });
         
         toast.success('Staff added successfully!');
@@ -197,7 +207,17 @@ export default function StaffManagement() {
       fetchStaff();
     } catch (error) {
       console.error('Error saving staff:', error);
-      toast.error(error.message);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/email-already-in-use') {
+        toast.error('Email already in use');
+      } else if (error.code === 'auth/weak-password') {
+        toast.error('Password should be at least 6 characters');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('Invalid email address');
+      } else {
+        toast.error(error.message || 'Failed to save staff');
+      }
     } finally {
       setLoading(false);
     }
@@ -225,7 +245,7 @@ export default function StaffManagement() {
       await updateDoc(doc(db, 'users', staffId), {
         status: newStatus,
         updatedAt: new Date().toISOString(),
-        updatedBy: currentUser?.uid // Using currentUser here
+        updatedBy: currentUser?.uid
       });
       toast.success(`Staff ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`);
       fetchStaff();
@@ -298,9 +318,8 @@ export default function StaffManagement() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Stats Cards */}
+      {/* Stats Cards */}
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
@@ -381,6 +400,9 @@ export default function StaffManagement() {
                   Join Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Salary
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -427,6 +449,9 @@ export default function StaffManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {member.joinDate ? new Date(member.joinDate).toLocaleDateString() : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ₹{member.salary ? parseInt(member.salary).toLocaleString() : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${

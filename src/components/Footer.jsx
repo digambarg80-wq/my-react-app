@@ -39,8 +39,8 @@ function Footer() {
           <h3 className="text-lg font-semibold mb-4 text-white">
             Contact Us
           </h3>
-          <p>📞 +91 9834000290</p>
-          <p>✉ digambarg80@gmail.com</p>
+          <p>📞 +91 94206 88356</p>
+          <p>✉ abhaywakle2171@gmail.com</p>
         </div>
 
         {/* Address */}

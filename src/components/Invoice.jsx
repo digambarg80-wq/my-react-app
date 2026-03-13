@@ -47,8 +47,8 @@ const Invoice = ({ order }) => {
             <p>Mauli Home Interiors</p>
             <p>Jawahar Colony, Chhatrapati Sambhajinagar</p>
             <p>Maharashtra, India - 431001</p>
-            <p>Email: digambarg80@gmail.com</p>
-            <p>Phone: +91 9834000290</p>
+            <p>Email: abhaywakle2171@gmail.com</p>
+            <p>Phone: +91 94206 88356</p>
           </div>
           <div>
             <h3 className="font-bold mb-2">Buyer Details:</h3>

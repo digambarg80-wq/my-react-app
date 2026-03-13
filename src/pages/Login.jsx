@@ -11,7 +11,7 @@ function Login() {
   const { addToCart } = useCart();
   
   const { state } = location;
-  const [message, setMessage] = useState(state?.message || '');
+  const [message] = useState(state?.message || '');
 
   const [formData, setFormData] = useState({
     email: "",

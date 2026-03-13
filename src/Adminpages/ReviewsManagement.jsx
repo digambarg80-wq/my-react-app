@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, updateDoc, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 
 export default function ReviewsManagement() {
   const [reviews, setReviews] = useState([]);
@@ -37,33 +38,37 @@ export default function ReviewsManagement() {
       });
       toast.success(`Review ${status === 'active' ? 'approved' : 'hidden'}`);
       fetchReviews();
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      console.error('Error moderating review:', error);
-      toast.error('Failed to moderate review');
+      toast.error('Failed to moderate');
     }
   };
 
   const handleDelete = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
-    
+    if (!window.confirm('Delete this review?')) return;
     try {
       await deleteDoc(doc(db, 'reviews', reviewId));
       toast.success('Review deleted');
       fetchReviews();
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      console.error('Error deleting review:', error);
-      toast.error('Failed to delete review');
+      toast.error('Failed to delete');
     }
   };
 
-  const filteredReviews = reviews.filter(review => {
-    if (filter === 'all') return true;
-    return review.status === filter;
-  });
-
   const renderStars = (rating) => {
-    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+        stars.push(<span key={i} className="text-yellow-400">★</span>);
+      } else {
+        stars.push(<span key={i} className="text-gray-300">★</span>);
+      }
+    }
+    return stars;
   };
+
+  const filteredReviews = filter === 'all' ? reviews : reviews.filter(r => r.status === filter);
 
   if (loading) {
     return (
@@ -74,12 +79,17 @@ export default function ReviewsManagement() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex items-center gap-4 mb-6">
+        <BackButton />
+        <h1 className="text-3xl font-bold">Reviews Management</h1>
+      </div>
+      
+      <div className="flex justify-end mb-6">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
+          className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500"
         >
           <option value="all">All Reviews</option>
           <option value="active">Approved</option>
@@ -98,6 +108,7 @@ export default function ReviewsManagement() {
               <th className="px-6 py-3 text-left">Review</th>
               <th className="px-6 py-3 text-left">Date</th>
               <th className="px-6 py-3 text-left">Status</th>
+              <th className="px-6 py-3 text-left">Verified</th>
               <th className="px-6 py-3 text-left">Actions</th>
             </tr>
           </thead>
@@ -110,20 +121,20 @@ export default function ReviewsManagement() {
                 </td>
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium">{review.userName}</p>
-                    <p className="text-sm text-gray-500">{review.userEmail}</p>
+                    <p className="font-medium">{review.userName || 'Anonymous'}</p>
+                    <p className="text-sm text-gray-500">{review.userEmail || ''}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex text-yellow-400">
+                  <div className="flex">
                     {renderStars(review.rating)}
                   </div>
                 </td>
                 <td className="px-6 py-4 max-w-md">
-                  <p className="text-sm">{review.comment}</p>
+                  <p className="text-sm">{review.comment || ''}</p>
                 </td>
                 <td className="px-6 py-4 text-sm">
-                  {new Date(review.createdAt).toLocaleDateString()}
+                  {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : '-'}
                 </td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 rounded-full text-xs ${
@@ -133,6 +144,15 @@ export default function ReviewsManagement() {
                   }`}>
                     {review.status || 'pending'}
                   </span>
+                </td>
+                <td className="px-6 py-4">
+                  {review.verified ? (
+                    <span className="text-green-600 text-sm flex items-center gap-1">
+                      ✓ Verified
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-sm">-</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 space-x-2">
                   {review.status !== 'active' && (

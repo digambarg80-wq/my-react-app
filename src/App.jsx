@@ -21,6 +21,7 @@ import Wishlist from "./pages/Wishlist";
 import Services from "./routes/Services";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+
 // Admin Imports
 import AdminLayout from './Adminpages/AdminLayout';
 import AdminDashboard from './Adminpages/AdminDashboard';
@@ -60,6 +61,7 @@ function App() {
               <Route path="/register" element={<><Navbar /><Register /><Footer /></>} />
               <Route path="/login" element={<><Navbar /><Login /><Footer /></>} />
               <Route path="/forgot-password" element={<><Navbar /><ForgotPassword /><Footer /></>} />
+              
               
               {/* Protected Routes - Login Required */}
               <Route path="/cart" element={
